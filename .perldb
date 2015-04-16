@@ -1,0 +1,16 @@
+## perlデバッガ設定
+# NOTE: ファイルパーミッションをオーナー以外書き込み禁止にしておくこと
+
+## $DB::singleの箇所まで実行
+parse_options("NonStop");
+
+## デフォルトだとsub呼び出しが100段以上になると毎回止まるので500段に
+$DB::deep = 500;
+
+## 起動直後に入力するコマンド
+sub afterinit {
+       ## 常に周辺行を表示
+       push @DB::typeahead, '{{ v';
+       ## 先頭のブレークポイント周辺を表示
+       push @DB::typeahead, 'v';
+}

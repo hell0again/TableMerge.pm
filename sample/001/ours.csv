@@ -1,0 +1,7 @@
+id,val1,val2
+9,0,"added (ours + theirs)"
+7,0,"added (ours)"
+5,0,"delete me (theirs)"
+3,0,"edited (ours + theirs)"
+2,0,"edit me (theirs)"
+1,0,"edited (ours)"

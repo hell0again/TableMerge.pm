@@ -1,0 +1,4 @@
+name = "TableMerge"
+# badges = ["travis"]
+module_maker="ModuleBuildTiny"
+

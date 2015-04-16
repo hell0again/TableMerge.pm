@@ -1,0 +1,79 @@
+{
+   "abstract" : "It's new $module",
+   "author" : [
+      "noname <noname@example.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Minilla/v2.3.0, CPAN::Meta::Converter version 2.150001",
+   "license" : [
+      "perl_5"
+   ],
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "TableMerge",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples",
+         "author",
+         "builder"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "Module::Build::Tiny" : "0.035"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::CPAN::Meta" : "0",
+            "Test::MinimumVersion::Fast" : "0.04",
+            "Test::PAUSE::Permissions" : "0.04",
+            "Test::Pod" : "1.41",
+            "Test::Spellunker" : "v0.2.7"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "Digest::SHA1" : "0",
+            "Encode" : "0",
+            "File::Basename" : "0",
+            "File::Path" : "0",
+            "File::Slurp" : "0",
+            "File::Temp" : "0",
+            "Getopt::Long" : "0",
+            "JSON::XS" : "0",
+            "Text::CSV_XS" : "0",
+            "perl" : "5.008001"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0.98"
+         }
+      }
+   },
+   "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/hell0again/TableMerge.pm/issues"
+      },
+      "homepage" : "https://github.com/hell0again/TableMerge.pm",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/hell0again/TableMerge.pm.git",
+         "web" : "https://github.com/hell0again/TableMerge.pm"
+      }
+   },
+   "version" : "0.01",
+   "x_contributors" : [
+      "hell0again <hell00again@gmail.com>"
+   ]
+}
