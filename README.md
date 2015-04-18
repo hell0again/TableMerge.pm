@@ -1,6 +1,6 @@
 # NAME
 
-TableMerge - It's new $module
+TableMerge - Merge table files (csv) using 3-way merge
 
 # SYNOPSIS
 

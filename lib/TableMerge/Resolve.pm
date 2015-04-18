@@ -10,13 +10,11 @@ use File::Path qw/mkpath/;
 use File::Slurp;
 use File::Temp qw/tempdir/;
 use Getopt::Long;
-use JSON::XS;
-use Text::CSV_XS;
-
-use TableMerge::Agent::James;
+use UNIVERSAL::require;
 
 our $VERSION = "0.01";
 
+our $DEFAULT_AGENT = "TableMerge::Agent::James";
 sub new {
     my ($class) = @_;
     return bless +{}, $class;
@@ -39,15 +37,15 @@ sub run {
     $self->{resolved} = shift @commands;
 
     if (! $self->{agent}) {
-        $self->set_agent(TableMerge::Agent::James->new());
+        $self->set_agent($DEFAULT_AGENT);
     }
-    $self->resolve();
-    print $self->{out};
-    exit $self->{status};
+    print $self->resolve();
+    exit $self->{cmd_status};
 }
 sub set_agent {
-    my ($self, $agent) = @_;
-    $self->{agent} = $agent;
+    my ($self, $agent_class) = @_;
+    $agent_class->require or die "can't load agent $agent_class", $@;
+    $self->{agent} = $agent_class->new();
 }
 sub set_header_str {
     my ($self, $header_str) = @_;
@@ -57,12 +55,15 @@ sub set_header_str {
 }
 sub resolve {
     my ($self) = @_;
-    my $resolved = $self->{resolved};
-    my $json = File::Slurp::read_file($resolved);
+    my $resolved_path = $self->{resolved};
+    my $resolved = File::Slurp::read_file($resolved_path);
     my $agent = $self->{agent};
-    my $csv = $agent->revert_json_to_csv($json, $self->{header});
-    $self->{out} = $csv;
-    $self->{status} = 0;
+
+    my $merged = $agent->decode_merged($resolved);
+    ## TODO: decodeに失敗するケース
+    $self->{cmd_status} = 0;
+    $merged = $agent->post_merge_rows($merged);
+    return encode('utf-8', $agent->decode_rows($merged));
 }
 
 1;
