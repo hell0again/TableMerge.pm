@@ -7,9 +7,11 @@ requires("File::Path");
 requires("File::Slurp");
 requires("File::Temp");
 requires("Getopt::Long");
-
-requires("Text::CSV_XS");
 requires("JSON::XS");
+requires("List::Compare");
+requires("List::Permutor");
+requires("Text::CSV_XS");
+requires("Text::Levenshtein::XS");
 
 on 'test' => sub {
     requires 'Test::More', '0.98';
