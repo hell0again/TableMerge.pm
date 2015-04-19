@@ -2,5 +2,16 @@ Revision history for Perl extension TableMerge
 
 {{$NEXT}}
 
-    - original version
+0.02 2015-04-19T17:19:01Z
+
+    - Agentと本体の役割分担を整理
+      - 入出力まわりをAgentに委譲
+    - Agentの動的ロードに対応
+    - Agent::James
+      - カラムの削除に対応
+      - ヘッダの並びをいい感じに
+      - PKの選択をいい感じに
+      - 選択したPKが一意性を満たすように修正
+    - Agent::Baseを追加
+      - 特に何もしないAgent
 
