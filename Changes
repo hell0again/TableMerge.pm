@@ -2,6 +2,11 @@ Revision history for Perl extension TableMerge
 
 {{$NEXT}}
 
+    - カラムのソート順を調整
+    - 一時フォルダの名前変更。先頭に"tablemerge"がつく
+    - コメント行の先頭にrow_idを追加
+    - 日本語を扱うサンプルを追加
+
 0.02 2015-04-19T17:19:01Z
 
     - Agentと本体の役割分担を整理
