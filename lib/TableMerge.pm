@@ -105,8 +105,9 @@ sub merge {
         print $out encode('utf-8', $str);
         close $out;
     };
-    my $tmp_dir = tempdir( CLEANUP => 1 );
-    # my $tmp_dir = tempdir( CLEANUP => 0 );
+    my $tmp_prefix = "tablemerge_" . "XXXXXXXX";
+    my $cleanup = 1;
+    my $tmp_dir = tempdir($tmp_prefix, CLEANUP => $cleanup);
     my $tmp1_path = File::Spec->catdir($tmp_dir, "ours", $ours_path);
     my $tmp2_path = File::Spec->catdir($tmp_dir, "base", $base_path);
     my $tmp3_path = File::Spec->catdir($tmp_dir, "theirs", $theirs_path);
@@ -129,7 +130,7 @@ sub merge {
     if ($diff3_st == 0) {
         my $merged = $agent->decode_merged($diff3_res);
         $merged = $agent->post_merge_rows($merged);
-        return encode('utf-8', $agent->decode_rows($merged));
+        return $agent->decode_rows($merged);
     } else {
         return $diff3_res;
     }

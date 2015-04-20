@@ -10,6 +10,7 @@ TESTS=$(cat <<EOL
 008
 009
 010
+011
 EOL
 )
 for T in ${TESTS}; do
