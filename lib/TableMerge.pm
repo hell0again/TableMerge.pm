@@ -11,7 +11,7 @@ use File::Temp qw/tempdir/;
 use Getopt::Long;
 use UNIVERSAL::require;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 our $DEFAULT_AGENT = "TableMerge::Agent::James";
 sub new {
