@@ -4,7 +4,9 @@ TableMerge - Merge table files (csv) using 3-way merge
 
 # SYNOPSIS
 
-    > cpanm git@github.com:hell0again/TableMerge.pm.git
+    > git clone git@github.com:hell0again/TableMerge.pm.git
+    > cd TableMerge.pm
+    > cpanm .
     > cd sample/003
     > tablemerge ours.csv base.csv theirs.csv
 
