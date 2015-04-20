@@ -181,24 +181,57 @@ sub _find_nearest_order_of_merged_header {
         A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
         0 1 2 3 4 5 6 7 8 9 + /
     |;
-    my $index_map = {};
+    my %chars_rev; ## a => 0, b => 1, c => 3 ...
+    map {
+        $chars_rev{ $chars[$_] } = $_;
+    } 0 .. $#{chars};
+    my $index_map = {}; ## id => 0, opened_at => 1 ...
     map {
         $index_map->{ $merged_header->[$_] } = $_;
     } 0 .. $#{$merged_header};
     my $_encode = sub {
         my @list = @_;
         return join "", map {
-            $chars[ $index_map->{$_} ]
+            my $k = $_;
+            (exists $index_map->{$k})?
+                $chars[ $index_map->{$k} ]:
+                "";
         } @list;
+    };
+    my $_decode = sub {
+        my ($str) = @_;
+        return map {
+            $merged_header->[$_]
+        } map {
+            $chars_rev{$_}
+        } split(//, $str);
     };
     my $encoded_header1 = &$_encode(@$header1);
     my $encoded_header2 = &$_encode(@$header2);
     my $encoded_header3 = &$_encode(@$header3);
-    my $perm = new List::Permutor(@$merged_header);
+    my $encoded_merged  = &$_encode(@$merged_header); ## unsorted
+    if ($encoded_header1 eq $encoded_header3) { ## ours と theirs が一緒ならそのまま
+        return @$header1;
+    }
+    if ($encoded_header1 eq $encoded_header2) {
+        if ( join("", sort {$a cmp $b} split(//, $encoded_header3)) eq
+             join("", sort {$a cmp $b} split(//, $encoded_merged )) ) {
+            ## theirsと一緒
+            return @$header3;
+        }
+    }
+    if ($encoded_header3 eq $encoded_header2) {
+        if ( join("", sort {$a cmp $b} split(//, $encoded_header1)) eq
+             join("", sort {$a cmp $b} split(//, $encoded_merged )) ) {
+            ## oursと一緒
+            return @$header1;
+        }
+    }
+    my $perm = new List::Permutor(split(//, $encoded_merged));
     my @merged;
     my $min = 2 ** 15;
     while (my @candidate = $perm->next) {
-        my $encoded_candidate = &$_encode(@candidate);
+        my $encoded_candidate = join("", @candidate);
         my $lsd1 = Text::Levenshtein::XS::distance($encoded_header1, $encoded_candidate);
         my $lsd2 = Text::Levenshtein::XS::distance($encoded_header2, $encoded_candidate);
         my $lsd3 = Text::Levenshtein::XS::distance($encoded_header3, $encoded_candidate);
@@ -210,7 +243,7 @@ sub _find_nearest_order_of_merged_header {
             #    join(",", @candidate),
             #    $lsd1, $lsd2, $lsd3, $p
             #);
-            @merged = @candidate;
+            @merged = &$_decode($encoded_candidate);
             last;
         }
         #warn sprintf("%s lsd1:%d, lsd2:%d, lsd3:%d : total: %d\n",
@@ -219,7 +252,7 @@ sub _find_nearest_order_of_merged_header {
         #);
         if ($p < $min) {
             $min = $p;
-            @merged = @candidate;
+            @merged = &$_decode($encoded_candidate);
         }
     }
     return @merged;
@@ -334,11 +367,11 @@ sub parse_row {
     map {
         my $key = $_;
         push(@x_array, join("", (
-            $self->{comment_prefix}, "//", $key
+            $self->{comment_prefix}, "//", $row_id, $self->{id_kv_delimiter}, $key
         )));
         push(@x_array, $self->encode_line($row_id, $key, $row_hash->{$key}));
         push(@x_array, join("", (
-            $self->{comment_prefix}, "//", $key
+            $self->{comment_prefix}, "//", $row_id, $self->{id_kv_delimiter}, $key
         )));
     } @$new_header;
     return \@x_array;
@@ -359,18 +392,19 @@ sub generate_row_id {
             "by_index" => [0,1],
         }
     };
-    map {
-        my $h = $extras->{$_};
-        if (exists $h->{by_index}) {
-            $source->{by_index} = $h->{by_index};
-        } elsif (exists $h->{by_name}) {
-            $source->{by_name} = $h->{by_name};
-        }
-    } grep { $self->{context}{filename} =~ /$_/ } keys %$extras;
-    if (scalar(@{ $source->{by_index} }) || scalar(@{ $source->{by_name} })) {
-    } elsif (exists $row_hash->{id}) {
-        $source->{by_name} = $pks;
-    }
+    #map {
+    #    my $h = $extras->{$_};
+    #    if (exists $h->{by_index}) {
+    #        $source->{by_index} = $h->{by_index};
+    #    } elsif (exists $h->{by_name}) {
+    #        $source->{by_name} = $h->{by_name};
+    #    }
+    #} grep { $self->{context}{filename} =~ /$_/ } keys %$extras;
+    #if (scalar(@{ $source->{by_index} }) || scalar(@{ $source->{by_name} })) {
+    #} elsif (exists $row_hash->{id}) {
+    #    $source->{by_name} = $pks;
+    #}
+    $source->{by_name} = $pks;
 
     my $row_id;
     if (0 < scalar(@{ $source->{by_name} })) {
@@ -467,39 +501,43 @@ sub post_parse_rows {
     } @$rows_lines3;
 
     ## 自明なローについて事前にマージ
+    my $no_digest = 0; ## ローの中身を無視、idでのみマージ
+    my $no_delete = 0; ## 削除はしない
     map {
+        my $digest1 = $self->calc_row_digest($rows_map1->{$_});
+        my $digest2 = $self->calc_row_digest($rows_map2->{$_});
+        my $digest3 = $self->calc_row_digest($rows_map3->{$_});
+        $digest1 = $digest2 = $digest3 = "x" if ($no_digest);
         if ($pre_merge->{$_} == 0b100) { # ローがoursのみに存在(追加確定)
             $pre_merge->{$_} = 0b111;
-            $rows_map3->{$_} = $rows_map1->{$_};
             $rows_map2->{$_} = $rows_map1->{$_};
+            $rows_map3->{$_} = $rows_map1->{$_};
         } elsif ($pre_merge->{$_} == 0b001) { # ローがtheirsのみに存在(追加確定)
             $pre_merge->{$_} = 0b111;
             $rows_map1->{$_} = $rows_map3->{$_};
             $rows_map2->{$_} = $rows_map3->{$_};
         } elsif ($pre_merge->{$_} == 0b101 || $pre_merge->{$_} == 0b111) {
-            my $digest1 = $self->calc_row_digest($rows_map1->{$_});
-            my $digest3 = $self->calc_row_digest($rows_map3->{$_});
-            if ($digest1 eq $digest3) { # ours, theirsのダイジェストが一致(追加or変更確定)
+            if ($digest1 eq $digest3) { # ours, theirsが一致(追加or変更確定)
                 $pre_merge->{$_} = 0b111;
-                $rows_map2->{$_} = $rows_map3->{$_};
+                $rows_map2->{$_} = $rows_map1->{$_};
+                $rows_map3->{$_} = $rows_map1->{$_};
             }
         } elsif ($pre_merge->{$_} == 0b010) { # baseのみに存在(削除確定)
-            delete $rows_map2->{$_};
+            if (!$no_delete) {
+                $pre_merge->{$_} = 0b000;
+                delete $rows_map2->{$_};
+            }
         } elsif ($pre_merge->{$_} == 0b011) {
-            my $digest2 = $self->calc_row_digest($rows_map2->{$_});
-            my $digest3 = $self->calc_row_digest($rows_map3->{$_});
-            if ($digest2 eq $digest3) { # oursが削除、theirs変更なし(削除確定)
+            if ($digest2 eq $digest3 && !$no_delete) { # oursが削除、theirs変更なし(削除確定)
                 delete $rows_map2->{$_};
                 delete $rows_map3->{$_};
-                $pre_merge->{$_} = 0b000
+                $pre_merge->{$_} = 0b000;
             }
          } elsif ($pre_merge->{$_} == 0b110) {
-            my $digest1 = $self->calc_row_digest($rows_map1->{$_});
-            my $digest2 = $self->calc_row_digest($rows_map2->{$_});
-            if ($digest1 eq $digest2) { # oursが削除、theirs変更なし(削除確定)
+            if ($digest1 eq $digest2 && !$no_delete) { # theirsが削除、ours変更なし(削除確定)
                 delete $rows_map1->{$_};
                 delete $rows_map2->{$_};
-                $pre_merge->{$_} = 0b000
+                $pre_merge->{$_} = 0b000;
             }
         }
     } keys %$pre_merge;
