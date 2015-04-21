@@ -79,6 +79,10 @@ sub pre_parse_rows {
         $header3 = shift @$rows3;
         ($alt_header1, $alt_header2, $alt_header3) = $self->_merge_header($header1, $header2, $header3);
     }
+    my %header1_idx;
+    map {
+        $header1_idx{ $alt_header1->[$_] } = $_;
+    } 0 .. $#{$alt_header1};
 
     #my $lc = List::Compare->new($alt_header1, $alt_header2);
     #my @intersect = $lc->get_intersection;
@@ -102,7 +106,10 @@ sub pre_parse_rows {
         }
     } ($rows1, $rows2, $rows3);
     my $pks = $self->find_pks($header_list, $rows_list);
-    # warn "pks is ". join(",", @$pks);
+    @$pks = sort {
+        $header1_idx{$a} <=> $header1_idx{$b}
+    } @$pks;
+    warn "pks is ". join(",", @$pks);
 
     my $res = +{
         ours => {
@@ -570,13 +577,14 @@ sub sort_rows {
         my $dlms = join("",
             $self->{comment_prefix},
             $self->{id_hash_tail},
-            $self->{id_kv_delimiter}
+            $self->{id_kv_delimiter},
+            $self->{id_delimiter},
         );
         my @as = split(/[${dlms}]/, $a->[0]);
         my @bs = split(/[${dlms}]/, $b->[0]);
         my $r = 0;
-        shift @as;
-        shift @bs;
+        shift @as; ## 先頭の : 分の空白
+        shift @bs; ## 先頭の : 分の空白
         if ($skip_hash) {
             shift @as;
             shift @bs;
