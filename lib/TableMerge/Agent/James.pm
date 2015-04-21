@@ -8,6 +8,7 @@ use Encode;
 use JSON::XS;
 use List::Compare;
 use List::Permutor;
+use Log::Log4perl qw(:easy);
 use Text::CSV_XS;
 use Text::Levenshtein::XS;
 
@@ -26,6 +27,7 @@ sub new {
         %options
     }, $class);
 }
+sub logger { Log::Log4perl->get_logger("TableMerge") }
 
 ########################
 sub parse_source {
@@ -109,7 +111,7 @@ sub pre_parse_rows {
     @$pks = sort {
         $header1_idx{$a} <=> $header1_idx{$b}
     } @$pks;
-    warn "pks is ". join(",", @$pks);
+    $self->logger->warn("pks: ". join(", ", @$pks));
 
     my $res = +{
         ours => {

@@ -9,15 +9,18 @@ use File::Path qw/mkpath/;
 use File::Slurp qw/read_file/;
 use File::Temp qw/tempdir/;
 use Getopt::Long;
+use Log::Log4perl qw(:easy);
 use UNIVERSAL::require;
 
 our $VERSION = "0.03";
 
+our $DEFAULT_LOG_LEVEL = $ERROR;
 our $DEFAULT_AGENT = "TableMerge::Agent::James";
 sub new {
     my ($class) = @_;
     return bless +{}, $class;
 }
+sub logger { Log::Log4perl->get_logger("TableMerge") }
 sub run {
     my ($self, @args) = @_;
     my @commands;
@@ -29,6 +32,7 @@ sub run {
         #"h|help"    => sub { unshift @commands, 'help' },
         #"v|version" => sub { unshift @commands, 'version' },
         "a|agent=s" => sub { $self->set_agent($_[1]) },
+        "d|debug"  => sub { $self->set_log_level($DEBUG) },
     );
     push(@commands, @args);
 
@@ -39,6 +43,9 @@ sub run {
     if (! $self->{agent}) {
         $self->set_agent($DEFAULT_AGENT);
     }
+    if (! $self->{log_level}) {
+        $self->set_log_level($DEFAULT_LOG_LEVEL);
+    }
     print $self->merge();
     exit $self->{cmd_status};
 }
@@ -47,6 +54,12 @@ sub set_agent {
     $agent_class->require or die "can't load agent $agent_class", $@;
     $self->{agent} = $agent_class->new();
 }
+sub set_log_level {
+    my ($self, $log_level) = @_;
+    $self->{log_level} = $log_level;
+    Log::Log4perl->easy_init({level => $self->{log_level}});
+}
+
 sub detect_linebreak {
     my ($line) = @_;
     if ($line =~ /\r\n$/) {
@@ -106,7 +119,7 @@ sub merge {
         close $out;
     };
     my $tmp_prefix = "tablemerge_" . "XXXXXXXX";
-    my $cleanup = 1;
+    my $cleanup = ($self->{log_level})? 1: 0;
     my $tmp_dir = tempdir($tmp_prefix, CLEANUP => $cleanup);
     my $tmp1_path = File::Spec->catdir($tmp_dir, "ours", $ours_path);
     my $tmp2_path = File::Spec->catdir($tmp_dir, "base", $base_path);
@@ -123,7 +136,7 @@ sub merge {
         "-L", $theirs_path,
         $tmp1_path, $tmp2_path, $tmp3_path,
     );
-    # warn $self->{cmd};
+    $self->logger->debug($self->{cmd});
     my $diff3_res = `$self->{cmd}`;
     my $diff3_st  = $? >>8;
     $self->{cmd_status} = $diff3_st;
@@ -131,7 +144,11 @@ sub merge {
         my $merged = $agent->decode_merged($diff3_res);
         $merged = $agent->post_merge_rows($merged);
         return $agent->decode_rows($merged);
+    } elsif ($diff3_st == 1) {
+        $self->logger->debug("diff3 merge failed, conflicted(%d)", $diff3_st);
+        return $diff3_res;
     } else {
+        $self->logger->error("diff3 merge failed, error(%d)", $diff3_st);
         return $diff3_res;
     }
 }

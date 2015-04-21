@@ -11,6 +11,7 @@ requires("Getopt::Long");
 requires("JSON::XS");
 requires("List::Compare");
 requires("List::Permutor");
+requires("Log::Log4perl");
 requires("Text::CSV_XS");
 requires("Text::Levenshtein::XS");
 requires("UNIVERSAL::require");
