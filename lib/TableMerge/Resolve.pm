@@ -55,15 +55,15 @@ sub set_header_str {
 }
 sub resolve {
     my ($self) = @_;
+    my $agent = $self->{agent};
     my $resolved_path = $self->{resolved};
     my $resolved = File::Slurp::read_file($resolved_path);
-    my $agent = $self->{agent};
 
     my $merged = $agent->decode_merged($resolved);
-    ## TODO: decodeに失敗するケース
-    $self->{cmd_status} = 0;
     $merged = $agent->post_merge_rows($merged);
-    return encode('utf-8', $agent->decode_rows($merged));
+    $self->{cmd_status} = 0;
+    return $agent->decode_rows($merged);
+    ## TODO: decodeに失敗するケース
 }
 
 1;
