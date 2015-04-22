@@ -118,9 +118,11 @@ sub merge {
         print $out encode('utf-8', $str);
         close $out;
     };
+    my $tmp_parent = "/var/tmp";
     my $tmp_prefix = "tablemerge_" . "XXXXXXXX";
-    my $cleanup = ($self->{log_level})? 1: 0;
-    my $tmp_dir = tempdir($tmp_prefix, CLEANUP => $cleanup);
+    my $cleanup = ($self->{log_level})? 0: 1;
+    my $tmp_dir = tempdir($tmp_prefix, DIR => $tmp_parent, CLEANUP => $cleanup);
+    $self->logger->debug("tempdir: ${tmp_dir}");
     my $tmp1_path = File::Spec->catdir($tmp_dir, "ours", $ours_path);
     my $tmp2_path = File::Spec->catdir($tmp_dir, "base", $base_path);
     my $tmp3_path = File::Spec->catdir($tmp_dir, "theirs", $theirs_path);
@@ -139,18 +141,21 @@ sub merge {
     $self->logger->debug($self->{cmd});
     my $diff3_res = `$self->{cmd}`;
     my $diff3_st  = $? >>8;
+    my $ret;
     $self->{cmd_status} = $diff3_st;
     if ($diff3_st == 0) {
         my $merged = $agent->decode_merged($diff3_res);
         $merged = $agent->post_merge_rows($merged);
-        return $agent->decode_rows($merged);
+        $self->logger->debug("diff3 merge success\n========================================");
+        $ret = $agent->decode_rows($merged);
     } elsif ($diff3_st == 1) {
-        $self->logger->debug("diff3 merge failed, conflicted(%d)", $diff3_st);
-        return $diff3_res;
+        $self->logger->debug("diff3 merge failed, conflicted(%d) =======================================", $diff3_st);
+        $ret = $diff3_res;
     } else {
-        $self->logger->error("diff3 merge failed, error(%d)", $diff3_st);
-        return $diff3_res;
+        $self->logger->error("diff3 merge failed, error(%d) =======================================", $diff3_st);
+        $ret = $diff3_res;
     }
+    return $ret;
 }
 
 

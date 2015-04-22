@@ -111,7 +111,13 @@ sub pre_parse_rows {
     @$pks = sort {
         $header1_idx{$a} <=> $header1_idx{$b}
     } @$pks;
-    $self->logger->warn("pks: ". join(", ", @$pks));
+    my $logger = $self->logger;
+    if ($logger->is_debug) {
+        $logger->debug("header(ours):   " . join(", ", @$header1));
+        $logger->debug("header(base):   " . join(", ", @$header2));
+        $logger->debug("header(theirs): " . join(", ", @$header3));
+        $logger->debug("header(merged): " . join(", ", @$pks));
+    }
 
     my $res = +{
         ours => {
