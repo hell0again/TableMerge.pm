@@ -1,7 +1,7 @@
 id,val1,val2
-1,1,"edit me (ours)"
-2,1,"edit me (theirs)"
-3,1,"edit me (ours + theirs)"
-4,1,"delete me (ours)"
-5,1,"delete me (theirs)"
+1,0,"edit me (ours)"
+2,0,"edit me (theirs)"
+3,0,"edit me (ours + theirs)"
+4,0,"delete me (ours)"
+5,0,"delete me (theirs)"
 6,0,"delete me (ours + theirs)"
