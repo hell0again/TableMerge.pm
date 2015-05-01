@@ -2,6 +2,8 @@ Revision history for Perl extension TableMerge
 
 {{$NEXT}}
 
+0.04 2015-05-01T04:46:08Z
+
     - -i|--in-place オプションを追加。oursを直接書き換える
 
 0.03 2015-04-20T18:36:17Z
