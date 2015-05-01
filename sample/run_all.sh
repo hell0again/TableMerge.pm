@@ -11,6 +11,8 @@ TESTS=$(cat <<EOL
 009
 010
 011
+014
+015
 EOL
 )
 for T in ${TESTS}; do

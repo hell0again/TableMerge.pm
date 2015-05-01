@@ -28,6 +28,7 @@ sub run {
         \@args,
         #"h|help"    => sub { unshift @commands, 'help' },
         #"v|version" => sub { unshift @commands, 'version' },
+        "i|in-place" => sub { $self->set_inplace(1) },
         "a|agent=s" => sub { $self->set_agent($_[1]) },
     );
     push(@commands, @args);
@@ -39,13 +40,25 @@ sub run {
     if (! $self->{agent}) {
         $self->set_agent($DEFAULT_AGENT);
     }
-    print $self->merge();
+
+    my $res = $self->merge();
+    if ($self->{inplace}) {
+        open(my $out, "+<", $self->{ours}) or die sprintf "open % failed", $self->{ours};
+        print $out $res;
+        close($out);
+    } else {
+        print STDOUT $res;
+    }
     exit $self->{cmd_status};
 }
 sub set_agent {
     my ($self, $agent_class) = @_;
     $agent_class->require or die "can't load agent $agent_class", $@;
     $self->{agent} = $agent_class->new();
+}
+sub set_inplace {
+    my ($self, $is_inplace) = @_;
+    $self->{inplace} = $is_inplace;
 }
 sub detect_linebreak {
     my ($line) = @_;

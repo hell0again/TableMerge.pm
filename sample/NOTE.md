@@ -38,4 +38,7 @@ AgentをAgent::Baseに変更
 # 011
 にほんご
 
+# 014
+--in-place オプション
+
 

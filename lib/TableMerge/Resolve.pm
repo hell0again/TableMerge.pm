@@ -29,6 +29,7 @@ sub run {
         \@args,
         #"h|help"    => sub { unshift @commands, 'help' },
         #"v|version" => sub { unshift @commands, 'version' },
+        "i|in-place" => sub { $self->set_inplace(1) },
         "a|agent" => sub { self->set_agent($_[1]) },
         "h|header" => sub { self->set_header_str($_[1]) },
     );
@@ -39,13 +40,25 @@ sub run {
     if (! $self->{agent}) {
         $self->set_agent($DEFAULT_AGENT);
     }
-    print $self->resolve();
+
+    my $res = $self->resolve();
+    if ($self->{inplace}) {
+        open(my $out, ">", $self->{resolved}) or die sprintf "open % failed", $self->{resolved};
+        print $out $res;
+        close($out);
+    } else {
+        print STDOUT $res;
+    }
     exit $self->{cmd_status};
 }
 sub set_agent {
     my ($self, $agent_class) = @_;
     $agent_class->require or die "can't load agent $agent_class", $@;
     $self->{agent} = $agent_class->new();
+}
+sub set_inplace {
+    my ($self, $is_inplace) = @_;
+    $self->{inplace} = $is_inplace;
 }
 sub set_header_str {
     my ($self, $header_str) = @_;
